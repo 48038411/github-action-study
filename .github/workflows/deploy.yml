@@ -36,3 +36,12 @@ jobs:
           SERVER_IP: ${{ secrets.ANOTHER_USER_HOST }}  # 引用配置，服务器的host名（IP或者域名domain.com）
           USERNAME: ${{ secrets.SSH_USER_NAME }}  # 引用配置，服务器登录名
           SERVER_DESTINATION: /home/mysite/   # 部署到目标文件夹
+      # Docker build
+      - name: Docker  build  and  run  # 第三步，打包项目并构建镜像
+        run: |
+          cd /home/runner/work/github-action-study/github-action-study
+          ls
+          docker build -t thp-vue .
+          docker run -itd --name thp-admin -p 8080:8080 thp-vue
+        env:
+          CI: true
