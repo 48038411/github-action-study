@@ -41,7 +41,6 @@ jobs:
         run: |
           cd /home/runner/work/github-action-study/github-action-study
           ls
-          docker build -t thp-vue .
-          docker run -itd --name thp-admin -p 8080:8080 thp-vue
+          docker-compose up -d
         env:
           CI: true
