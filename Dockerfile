@@ -1,4 +1,4 @@
-FROM registry.cn-hangzhou.aliyuncs.com/library-bd/nginx:1.19.0
+FROM nginx:latest
 LABEL maintainer="guoruichang@njbandou.com"
 
 
