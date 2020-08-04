@@ -19,27 +19,31 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 10
-      # npm install
+      # 发布到远程
       - name: npm install
         run: |
           npm install
           npm run build
+          docker login --username=${{ secrets.ALIYUN_USERNAME }} --password ${{ secrets.ALIYUN_PASSWORD }} registry.cn-shanghai.aliyuncs.com
+          docker build . -t ${{ secrets.REGISTRY }}:$GITHUB_RUN_NUMBER
+          docker push ${{ secrets.REGISTRY }}:$GITHUB_RUN_NUMBER
+          docker tag $(docker images ${{ secrets.REGISTRY }}:$GITHUB_RUN_NUMBER -q) ${{ secrets.REGISTRY }}:latest
+          docker push ${{ secrets.REGISTRY }}:latest
         env:
           CI: true
-    # Deploy
-      - name: Deploy to Server  # 第二步，rsync推文件
-        uses: AEnterprise/rsync-deploy@v1.0  # 使用别人包装好的步骤镜像
-        env:
-          DEPLOY_KEY: ${{ secrets.ANOTHER_DEPLOY_KEY }}   # 引用配置，SSH私钥
-          ARGS: -avz --delete --exclude='*.pyc'   # rsync参数，排除.pyc文件
-          SERVER_PORT: '22'  # SSH端口
-          FOLDER: ./  # 要推送的文件夹，路径相对于代码仓库的根目录
-          SERVER_IP: ${{ secrets.ANOTHER_USER_HOST }}  # 引用配置，服务器的host名（IP或者域名domain.com）
-          USERNAME: ${{ secrets.SSH_USER_NAME }}  # 引用配置，服务器登录名
-          SERVER_DESTINATION: /home/mysite/   # 部署到目标文件夹
-      # Docker build
-      - name: Docker  build  and  run  # 第三步，打包项目并构建镜像
-        run: |
-          docker-compose up -d
-        env:
-          CI: true
+          
+      - name: Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_USER_HOST }}
+          username: ${{ secrets.SSH_USER_NAME }}
+          password: ${{ secrets.SSH_USER_PWD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            docker stop $(docker ps --filter ancestor=${{ secrets.REGISTRY }} -q)
+            docker rm -f $(docker ps -a --filter ancestor=${{ secrets.REGISTRY }}:latest -q)
+            docker rmi -f $(docker images  ${{ secrets.REGISTRY }}:latest -q)
+            docker login --username=${{ secrets.ALIYUN_USERNAME }} --password ${{ secrets.ALIYUN_PASSWORD }} registry.cn-shanghai.aliyuncs.com
+            docker pull ${{ secrets.REGISTRY }}:latest
+            docker run -d -p 8086:8086 ${{ secrets.REGISTRY }}:latest
+            docker-compose up -d
