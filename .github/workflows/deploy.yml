@@ -16,10 +16,11 @@ jobs:
       # 使用 node:10
       - name: use Node.js 10
         uses: actions/setup-node@v1
+        # 定义该步操作需要的参数，名字要跟方法需要的一样
         with:
           node-version: 10
       # 发布到远程
-      # npm install
+      # npm install，我们自己写脚本没有用别人的，所以直接run运行，不需要with传参
       - name: npm install
         run: |
           npm install
@@ -40,6 +41,7 @@ jobs:
           
       - name: Deploy
         uses: appleboy/ssh-action@master
+        # 定义执行该uses脚本需要的参数以及运行命令
         with:
           host: ${{ secrets.SSH_USER_HOST }}
           username: ${{ secrets.SSH_USER_NAME }}
