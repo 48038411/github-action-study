@@ -1,19 +1,18 @@
 name:  deploy vue to ecs
+# 在master分支有push事件时触发执行该脚本文件
 on:
   push:
     branches:
       - master
 jobs:
+  # build是该job的id
   build:
+  # 脚本运行所需要的虚拟机，在Ubuntu上运行，还有Windows和Mac
     runs-on: ubuntu-latest
     steps:
-      # 切换分支
+      # 切换分支获取源代码
       - name: Checkout
         uses: actions/checkout@master
-      # 下载 git submodule
-      - uses: srt32/git-actions@v0.0.3
-        with:
-          args: git submodule update --init --recursive
       # 使用 node:10
       - name: use Node.js 10
         uses: actions/setup-node@v1
@@ -25,11 +24,17 @@ jobs:
         run: |
           npm install
           npm run build
+          # 登录阿里云仓库地址
           docker login --username=${{ secrets.ALIYUN_USERNAME }} --password ${{ secrets.ALIYUN_PASSWORD }} registry.cn-shanghai.aliyuncs.com
+          # 以github运行编号为名构建镜像
           docker build . -t ${{ secrets.REGISTRY }}:$GITHUB_RUN_NUMBER
+          # 以github运行编号为名推送到仓库上
           docker push ${{ secrets.REGISTRY }}:$GITHUB_RUN_NUMBER
+          # 标记本地镜像，归入阿里云的私有仓库
           docker tag $(docker images ${{ secrets.REGISTRY }}:$GITHUB_RUN_NUMBER -q) ${{ secrets.REGISTRY }}:latest
+          # push一版最新的
           docker push ${{ secrets.REGISTRY }}:latest
+          # 设置环境变量，这里是CI为true，脚本自动运行
         env:
           CI: true
           
@@ -40,7 +45,7 @@ jobs:
           username: ${{ secrets.SSH_USER_NAME }}
           password: ${{ secrets.SSH_USER_PWD }}
           port: ${{ secrets.PORT }}
-          script: |
+          run: |
             docker stop $(docker ps --filter ancestor=${{ secrets.REGISTRY }} -q)
             docker rm -f $(docker ps -a --filter ancestor=${{ secrets.REGISTRY }}:latest -q)
             docker rmi -f $(docker images  ${{ secrets.REGISTRY }}:latest -q)
