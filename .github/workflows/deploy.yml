@@ -46,4 +46,4 @@ jobs:
             docker rmi -f $(docker images  ${{ secrets.REGISTRY }}:latest -q)
             docker login --username=${{ secrets.ALIYUN_USERNAME }} --password ${{ secrets.ALIYUN_PASSWORD }} registry.cn-shanghai.aliyuncs.com
             docker pull ${{ secrets.REGISTRY }}:latest
-            docker run -d -p 3000:3000 ${{ secrets.REGISTRY }}:latest
+            docker run -d -p 80:80 ${{ secrets.REGISTRY }}:latest
